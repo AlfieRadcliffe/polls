@@ -1,0 +1,32 @@
+name: Build and Push Docker Image
+
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create docker buildx
+        run: docker buildx create --use
+
+      - name: Build Docker image
+        run: docker buildx build --platform linux/amd64 -t alfie --load .
+
+      - name: Login to Scaleway Container Registry
+        run: echo "${{secrets.SCALEWAY_PASSWORD}}" | docker login rg.fr-par.scw.cloud/tubr-tech -u nologin --password-stdin
+
+      - name: Get current date
+        run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
+
+      - name: Tag Docker image
+        run: docker tag alfie:latest rg.fr-par.scw.cloud/tubr-tech/alfie:demo_${{ env.DATE }}_${{ github.run_number }}
+
+      - name: Push Docker image
+        run: docker push rg.fr-par.scw.cloud/tubr-tech/alfie:demo_${{ env.DATE }}_${{ github.run_number }}
